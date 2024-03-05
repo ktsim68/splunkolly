@@ -1,0 +1,55 @@
+clusterName: k3s
+splunkObservability:
+  realm: us1
+  accessToken: LqTJg7XCtB0l0yTihCVu6A
+  metricsEnabled: true
+  tracesEnabled: true
+  logsEnabled: false
+agent:
+  enabled: true
+  config:
+    processors:
+      filter/exclude_metrics_from_namespace:
+        metrics:
+          exclude:
+            match_type: regexp
+            resource_attributes:
+              - key: k8s.namespace.name
+                value: '^(kube-system)$'
+    service:
+      pipelines:
+        metrics:
+          processors:
+            - memory_limiter
+            - k8sattributes
+            - batch
+            - resourcedetection
+            - resource
+            - filter/exclude_metrics_from_namespace
+clusterReceiver:
+  enabled: true
+  config:
+    processors:
+      filter/exclude_metrics_from_namespace:
+        metrics:
+          exclude:
+            match_type: regexp
+            resource_attributes:
+              - key: k8s.namespace.name
+                value: '^(kube-system)$'
+    service:
+      extensions:
+      - health_check
+      - memory_ballast
+      pipelines:
+        metrics:
+          exporters:
+          - signalfx
+          processors:
+          - memory_limiter
+          - batch
+          - resource
+          - resource/k8s_cluster
+          - filter/exclude_metrics_from_namespace
+          receivers:
+          - k8s_cluster
